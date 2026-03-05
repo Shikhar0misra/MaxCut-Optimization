@@ -4,6 +4,7 @@ import time
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 # ---------------------------
 # Generate Erdős–Rényi Graph
 # ---------------------------
@@ -37,6 +38,7 @@ def compute_cut(G, partition):
 # Brute Force Max-Cut
 # ---------------------------
 def brute_force_maxcut(G):
+
     n = len(G.nodes())
 
     best_cut = 0
@@ -55,6 +57,42 @@ def brute_force_maxcut(G):
     return best_cut, best_partition, all_cuts
 
 
+# ---------------------------
+# Greedy / Local Search Max-Cut
+# ---------------------------
+def greedy_maxcut(G):
+
+    n = len(G.nodes())
+
+    # Start with random partition
+    partition = [random.randint(0,1) for _ in range(n)]
+
+    improved = True
+
+    while improved:
+
+        improved = False
+
+        for node in range(n):
+
+            current_cut = compute_cut(G, partition)
+
+            # Flip node
+            partition[node] = 1 - partition[node]
+
+            new_cut = compute_cut(G, partition)
+
+            if new_cut > current_cut:
+                improved = True
+            else:
+                # Revert flip
+                partition[node] = 1 - partition[node]
+
+    best_cut = compute_cut(G, partition)
+
+    return best_cut, partition
+
+
 # ======================================================
 # PART 1: Demonstrate Multiple Graphs (n = 7)
 # ======================================================
@@ -71,32 +109,51 @@ for example in range(num_examples):
 
     G = generate_graph(n, p)
 
+    # ---- Brute Force ----
     start = time.time()
     best_cut, best_partition, all_cuts = brute_force_maxcut(G)
     end = time.time()
 
-    print("Best Cut Value:", best_cut)
-    print("Best Partition:", best_partition)
-    print("Execution Time:", end-start)
+    print("Brute Force Cut Value:", best_cut)
+    print("Brute Partition:", best_partition)
+    print("Brute Execution Time:", end-start)
+
+    # ---- Greedy ----
+    start = time.time()
+    greedy_cut, greedy_partition = greedy_maxcut(G)
+    end = time.time()
+
+    print("Greedy Cut Value:", greedy_cut)
+    print("Greedy Partition:", greedy_partition)
+    print("Greedy Execution Time:", end-start)
 
     pos = nx.spring_layout(G)
 
-    colors = ["red" if best_partition[i]==0 else "blue" for i in range(n)]
+    brute_colors = ["red" if best_partition[i]==0 else "blue" for i in range(n)]
+    greedy_colors = ["red" if greedy_partition[i]==0 else "blue" for i in range(n)]
 
-    cut_edges = [(u,v) for u,v in G.edges()
+    brute_cut_edges = [(u,v) for u,v in G.edges()
                  if best_partition[u] != best_partition[v]]
 
-    # ---- Side by Side Visualization ----
-    fig, axes = plt.subplots(1,2, figsize=(10,5))
+    greedy_cut_edges = [(u,v) for u,v in G.edges()
+                 if greedy_partition[u] != greedy_partition[v]]
+
+    # ---- Side by Side Visualization (3 graphs) ----
+    fig, axes = plt.subplots(1,3, figsize=(15,5))
 
     # Initial Graph
     nx.draw(G, pos, with_labels=True, ax=axes[0])
     axes[0].set_title("Initial Random Graph")
 
-    # Max-Cut Graph
-    nx.draw(G, pos, node_color=colors, with_labels=True, ax=axes[1])
-    nx.draw_networkx_edges(G, pos, edgelist=cut_edges, width=2, ax=axes[1])
-    axes[1].set_title("Max-Cut Partition")
+    # Brute Force Result
+    nx.draw(G, pos, node_color=brute_colors, with_labels=True, ax=axes[1])
+    nx.draw_networkx_edges(G, pos, edgelist=brute_cut_edges, width=2, ax=axes[1])
+    axes[1].set_title("Brute Force Max-Cut")
+
+    # Greedy Result
+    nx.draw(G, pos, node_color=greedy_colors, with_labels=True, ax=axes[2])
+    nx.draw_networkx_edges(G, pos, edgelist=greedy_cut_edges, width=2, ax=axes[2])
+    axes[2].set_title("Greedy Max-Cut")
 
     plt.show()
 
@@ -106,24 +163,33 @@ for example in range(num_examples):
 # ======================================================
 
 node_sizes = list(range(7, 14))
-runtimes = []
+brute_runtimes = []
+greedy_runtimes = []
 
 for size in node_sizes:
 
     G_temp = generate_graph(size, 0.5)
 
+    # Brute Force
     start = time.time()
     brute_force_maxcut(G_temp)
     end = time.time()
+    brute_runtimes.append(end-start)
 
-    runtimes.append(end-start)
+    # Greedy
+    start = time.time()
+    greedy_maxcut(G_temp)
+    end = time.time()
+    greedy_runtimes.append(end-start)
 
 
 plt.figure()
-plt.plot(node_sizes, runtimes, marker='o')
-plt.title("Runtime vs Number of Nodes (Brute Force)")
+plt.plot(node_sizes, brute_runtimes, marker='o', label="Brute Force")
+plt.plot(node_sizes, greedy_runtimes, marker='o', label="Greedy")
+plt.title("Runtime vs Number of Nodes")
 plt.xlabel("Number of Nodes (n)")
 plt.ylabel("Execution Time (seconds)")
+plt.legend()
 plt.show()
 
 
