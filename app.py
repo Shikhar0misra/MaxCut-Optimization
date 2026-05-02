@@ -38,7 +38,8 @@ st.markdown("""
 }
 
 html, body, [class*="css"] { font-family:var(--sans) !important; background-color:var(--paper) !important; color:var(--ink) !important; }
-#MainMenu, footer, header { visibility:hidden; }
+#MainMenu, footer { visibility:hidden; }
+header { visibility:visible; }
 .block-container { padding:2.5rem 3rem 5rem !important; max-width:1340px; }
 
 [data-testid="stSidebar"] { background:var(--ink) !important; border-right:none !important; }
@@ -179,7 +180,7 @@ if menu == "Generate Graphs":
 
     col_a, col_b, col_c = st.columns([1, 1, 1])
     with col_a:
-        nodes = st.slider("Node Count  |V|", 10, 100, 15)
+        nodes = st.slider("Node Count  |V|", 0, 100, 15)
         if nodes <= BRUTE_FORCE_LIMIT:
             pill_cls  = "complexity-feasible"
             pill_text = f"Brute-force feasible — 2^{nodes} = {2**nodes:,} states"
