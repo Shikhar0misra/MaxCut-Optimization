@@ -15,8 +15,13 @@ def init_db():
         greedy_cut REAL,
         brute_time REAL,
         greedy_time REAL,
+        vqe_time REAL,
+        qaoa_time REAL,
+        vqe_quantum_time REAL,
+        qaoa_quantum_time REAL,
         approx_ratio REAL,
-        vqe_cut REAL
+        vqe_cut REAL,
+        qaoa_cut REAL
     )
     """)
 
@@ -25,6 +30,21 @@ def init_db():
 
     if "vqe_cut" not in columns:
         c.execute("ALTER TABLE experiments ADD COLUMN vqe_cut REAL")
+
+    if "vqe_time" not in columns:
+        c.execute("ALTER TABLE experiments ADD COLUMN vqe_time REAL")
+
+    if "qaoa_cut" not in columns:
+        c.execute("ALTER TABLE experiments ADD COLUMN qaoa_cut REAL")
+
+    if "qaoa_time" not in columns:
+        c.execute("ALTER TABLE experiments ADD COLUMN qaoa_time REAL")
+
+    if "vqe_quantum_time" not in columns:
+        c.execute("ALTER TABLE experiments ADD COLUMN vqe_quantum_time REAL")
+
+    if "qaoa_quantum_time" not in columns:
+        c.execute("ALTER TABLE experiments ADD COLUMN qaoa_quantum_time REAL")
 
     conn.commit()
     conn.close()
@@ -37,8 +57,9 @@ def insert_experiment(data):
 
     c.execute("""
     INSERT INTO experiments(nodes,edges,brute_cut,greedy_cut,
-    brute_time,greedy_time,approx_ratio,vqe_cut)
-    VALUES (?,?,?,?,?,?,?,?)
+    brute_time,greedy_time,vqe_time,qaoa_time,vqe_quantum_time,
+    qaoa_quantum_time,approx_ratio,vqe_cut,qaoa_cut)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, data)
 
     conn.commit()

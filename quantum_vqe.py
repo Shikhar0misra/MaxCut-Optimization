@@ -1,10 +1,13 @@
 import numpy as np
 import inspect
+import time
 
 from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit.circuit.library import TwoLocal
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import COBYLA
+from algorithms import compute_cut
+from quantum_runtime import estimate_quantum_execution_time
 
 try:
     from qiskit.primitives import Estimator
@@ -42,7 +45,7 @@ def build_maxcut_terms(G):
         z[j] = 'Z'
 
         pauli_str = "".join(z)
-        pauli_list.append((pauli_str, -0.5))
+        pauli_list.append((pauli_str, 0.5))
 
     return pauli_list
 
@@ -70,16 +73,39 @@ def get_solution(ansatz, optimal_params):
     best_index = np.argmax(probs)
     bitstring = format(best_index, f'0{qc.num_qubits}b')
 
-    return [int(bit) for bit in bitstring]
+    return [int(bit) for bit in reversed(bitstring)]
 
 
-def run_vqe(G):
+def improve_partition(G, partition):
+
+    partition = list(partition)
+    best_cut = compute_cut(G, partition)
+    improved = True
+
+    while improved:
+        improved = False
+
+        for node in range(len(partition)):
+            partition[node] = 1 - partition[node]
+            candidate_cut = compute_cut(G, partition)
+
+            if candidate_cut > best_cut:
+                best_cut = candidate_cut
+                improved = True
+            else:
+                partition[node] = 1 - partition[node]
+
+    return best_cut, partition
+
+
+def run_vqe(G, reps=1, maxiter=75):
 
     n = len(G.nodes())
+    start = time.time()
 
-    ansatz = TwoLocal(n, ['ry', 'rz'], 'cz', reps=2)
+    ansatz = TwoLocal(n, ['ry', 'rz'], 'cz', reps=reps)
 
-    optimizer = COBYLA(maxiter=100)
+    optimizer = COBYLA(maxiter=maxiter)
 
     vqe_params = inspect.signature(VQE).parameters
 
@@ -106,9 +132,15 @@ def run_vqe(G):
             vqe = VQE(ansatz=ansatz, optimizer=optimizer, quantum_instance=backend)
 
     result = vqe.compute_minimum_eigenvalue(H)
+    evaluations = getattr(result, "cost_function_evals", None) or maxiter
 
     energy = result.eigenvalue.real
 
     solution = get_solution(ansatz, result.optimal_point)
+    vqe_cut = compute_cut(G, solution)
+    improved_cut, improved_solution = improve_partition(G, solution)
 
-    return energy, solution
+    end = time.time()
+    quantum_time = estimate_quantum_execution_time(ansatz, evaluations + 1)
+
+    return energy, improved_solution, end-start, quantum_time, vqe_cut, improved_cut
