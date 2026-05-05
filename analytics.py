@@ -7,11 +7,10 @@ RUNTIME_COLUMNS = {
     "brute_time": "Brute Force",
     "greedy_time": "Greedy",
     "vqe_quantum_time": "VQE",
-    "qaoa_quantum_time": "QAOA",
 }
 
 
-def predict_runtime(df, runtime_column="brute_time"):
+def predict_runtime(df, runtime_column="brute_time", target_nodes=None):
 
     df = df.sort_values(by="nodes")
     df = df.dropna(subset=[runtime_column])
@@ -22,7 +21,10 @@ def predict_runtime(df, runtime_column="brute_time"):
     model = LinearRegression()
     model.fit(X, y)
 
-    future_nodes = np.array([[15],[18],[20]])
+    if target_nodes is None:
+        target_nodes = [15, 18, 20]
+
+    future_nodes = np.array(target_nodes).reshape(-1, 1)
 
     log_pred = model.predict(future_nodes)
     prediction = np.exp(log_pred)
@@ -30,13 +32,13 @@ def predict_runtime(df, runtime_column="brute_time"):
     return future_nodes.flatten(), prediction
 
 
-def predict_all_runtimes(df):
+def predict_all_runtimes(df, target_nodes=None):
 
     predictions = {}
 
     for column, label in RUNTIME_COLUMNS.items():
         if column in df.columns and df[column].notna().any():
-            future, pred = predict_runtime(df, column)
+            future, pred = predict_runtime(df, column, target_nodes)
             predictions[label] = (future, pred)
 
     return predictions
@@ -59,15 +61,9 @@ def complexity_comparison():
         },
         {
             "Algorithm": "VQE + Local Improvement",
-            "Time Complexity": "O(I * 2^n * p(n + m) + k * n * m)",
-            "Why": "Statevector VQE runs up to I optimizer iterations, then a cheap local search polishes the measured bitstring.",
-            "Space Complexity": "O(2^n) in this statevector simulator",
-        },
-        {
-            "Algorithm": "QAOA + Local Improvement",
-            "Time Complexity": "O(R * I * 2^n * p(n + m) + k * n * m)",
-            "Why": "Runs R QAOA restarts; each optimizer step simulates p cost/mixer layers, then local search polishes the best bitstring.",
-            "Space Complexity": "O(2^n) in this statevector simulator",
+            "Time Complexity": "O(I * S * p(n + m) + k * n * m)",
+            "Why": "On quantum hardware, VQE runs I optimizer iterations with S measurement shots over a p-depth ansatz, then local search polishes the measured bitstring.",
+            "Space Complexity": "O(n)",
         },
     ]
 
@@ -86,7 +82,6 @@ def runtime_prediction_plot(df):
         "brute_time": "red",
         "greedy_time": "blue",
         "vqe_quantum_time": "green",
-        "qaoa_quantum_time": "purple",
     }
 
     for column, label in RUNTIME_COLUMNS.items():
