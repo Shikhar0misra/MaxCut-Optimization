@@ -75,8 +75,8 @@ st.markdown(
 st.title("Max-Cut Optimization Dashboard")
 st.caption("Compare classical and variational quantum approaches on generated Max-Cut graphs.")
 
-BRUTE_FORCE_NODE_LIMIT = 16
-QUANTUM_SIM_NODE_LIMIT = 16
+BRUTE_FORCE_NODE_LIMIT = 15
+QUANTUM_SIM_NODE_LIMIT = 15
 
 st.sidebar.title("Controls")
 menu = st.sidebar.selectbox(
