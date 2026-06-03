@@ -4,15 +4,23 @@ import time
 
 from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit.circuit.library import TwoLocal
-from qiskit.algorithms import VQE
-from qiskit.algorithms.optimizers import COBYLA
 from algorithms import compute_cut
 from quantum_runtime import estimate_quantum_execution_time
 
 try:
-    from qiskit.primitives import Estimator
+    from qiskit_algorithms import VQE
+    from qiskit_algorithms.optimizers import COBYLA
 except ImportError:
-    Estimator = None
+    from qiskit.algorithms import VQE
+    from qiskit.algorithms.optimizers import COBYLA
+
+try:
+    from qiskit.primitives import StatevectorEstimator as Estimator
+except ImportError:
+    try:
+        from qiskit.primitives import Estimator
+    except ImportError:
+        Estimator = None
 
 try:
     from qiskit import Aer

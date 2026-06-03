@@ -1,0 +1,9 @@
+streamlit
+matplotlib
+networkx
+pandas
+numpy
+scikit-learn
+qiskit
+qiskit-aer
+qiskit-algorithms
